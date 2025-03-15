@@ -80,7 +80,15 @@ const loginUser = async (req, res = response) => {
 			})
 		}
 		
-		const isTokenValid = validateJwt(user.token);
+		let currentToken = user.token; 
+		
+		if (user.role === 'admin') {
+			const userId = user._id;
+			currentToken = await generateJWT(userId, user.name, user.email, user.role);
+			await User.findByIdAndUpdate(userId, {token: currentToken, authorized: true});
+		}
+		
+		const isTokenValid = validateJwt(currentToken);
 		
 		if (!isTokenValid) {
 			return res.status(400).json({
@@ -89,13 +97,6 @@ const loginUser = async (req, res = response) => {
 			})
 		}
 		
-		let currentToken = user.token; 
-		
-		if (user.role === 'admin') {
-			const userId = user._id;
-			currentToken = await generateJWT(userId, user.name, user.email, user.role);
-			await User.findByIdAndUpdate(userId, {token: currentToken, authorized: true});
-		}
 		
 		return res.status(200).json({
 			ok: true,
